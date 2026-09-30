@@ -27,6 +27,46 @@ using namespace saimeta;
 using namespace sairediscommon;
 using namespace std::placeholders;
 
+namespace
+{
+
+static constexpr const char* ACL_FLEX_COUNTER_GROUP = "ACL_STAT_COUNTER";
+
+static std::map<std::string, std::string> gAclFlexCounterGroupFieldCache;
+
+static bool shouldSuppressAclCounterGroupRecord(const std::string& key,
+                                               const std::vector<swss::FieldValueTuple>& entries)
+{
+    if (key != ACL_FLEX_COUNTER_GROUP)
+    {
+        return false;
+    }
+
+    bool shouldSuppress = true;
+
+    for (const auto& entry : entries)
+    {
+        const auto& field = fvField(entry);
+        const auto& value = fvValue(entry);
+
+        if (field.empty() || value.empty())
+        {
+            continue;
+        }
+
+        auto it = gAclFlexCounterGroupFieldCache.find(field);
+        if (it == gAclFlexCounterGroupFieldCache.end() || it->second != value)
+        {
+            shouldSuppress = false;
+            gAclFlexCounterGroupFieldCache[field] = value;
+        }
+    }
+
+    return shouldSuppress;
+}
+
+}
+
 std::vector<swss::FieldValueTuple> serialize_counter_id_list(
         _In_ const sai_enum_metadata_t *stats_enum,
         _In_ uint32_t count,
